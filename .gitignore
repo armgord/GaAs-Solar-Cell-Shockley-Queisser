@@ -1,0 +1,8 @@
+# Lumerical auto-generated and log files
+*.log
+*_p0.*
+*.ldev.bak
+*.fsp.bak
+
+# MATLAB
+*.asv
