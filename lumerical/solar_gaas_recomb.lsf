@@ -1,0 +1,40 @@
+#####################################################################
+# Analyze the recombination rate profile in a 1D cut at V=VOC
+#
+# (c) Lumerical Solutions, Inc.
+#####################################################################
+
+R = getresult('CHARGE','recombination');
+
+ivoc = find(abs(R.V_emitter - 1.06) < 0.001);
+nv = length(R.x);
+
+Ropt = pinch(abs(R.Ropt));    Ropt = pinch(Ropt(1:nv,ivoc));
+Rau  = pinch(abs(R.Rau));     Rau  = pinch(Rau(1:nv,ivoc));
+Rsrh = pinch(abs(R.Rsrh));    Rsrh = pinch(Rsrh(1:nv,ivoc));
+Rnet = Rsrh + Ropt + Rau;
+
+xi = getnamed('CHARGE simulation region','x');
+yi = linspace(getnamed('base','y max'),getnamed('emitter','y min')-1e-12,1701);
+
+Ropti = interptri(R.elements,[R.x,R.y],log10(abs(Ropt)),xi,yi,0);
+Raui = interptri(R.elements,[R.x,R.y],log10(abs(Rau)),xi,yi,0);
+Rsrhi = interptri(R.elements,[R.x,R.y],log10(abs(Rsrh)),xi,yi,0);
+Rneti = interptri(R.elements,[R.x,R.y],log10(abs(Rnet)),xi,yi,0);
+
+plot(yi*1e6,10^Ropti,10^Raui,10^Rsrhi,'y (um)','R (1/cm3/s)','','logplot');
+legend('Ropt','Rau','Rsrh');
+setplot("y min",(1e17));
+setplot("y max",(1e22));
+setplot("legend position",3);
+
+
+
+netRopt = integrate(10^transpose(Ropti),1,yi);
+netRau = integrate(10^transpose(Raui),1,yi);
+netRsrh = integrate(10^transpose(Rsrhi),1,yi);
+
+netRtot = netRopt + netRau + netRsrh;
+?'Frac. Ropt = '+num2str(netRopt/netRtot*100)+'%';
+?'Frac. Rau  = '+num2str(netRau/netRtot*100)+'%';
+?'Frac. Rsrh = '+num2str(netRsrh/netRtot*100)+'%';

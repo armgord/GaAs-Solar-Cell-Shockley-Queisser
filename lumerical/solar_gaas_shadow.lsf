@@ -1,0 +1,8 @@
+ shadow_pct = 0.06;
+ normarea = (getnamed('CHARGE simulation region','x span')*getnamed('CHARGE','norm length'));
+ base = getresult('CHARGE','base');
+ Jb = pinch(base.I)/normarea; 
+ Jbs=Jb/(1 + shadow_pct);# with shadowing
+ Ve = base.V_emitter;
+ plot(Ve,0.1*Jbs,'voltage (V)','current density (mA/cm2)');
+ plot(Ve,0.1*Jbs*Ve,'voltage (V)','efficiency (%)');

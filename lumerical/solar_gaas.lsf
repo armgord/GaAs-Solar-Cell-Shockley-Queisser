@@ -1,0 +1,6 @@
+ normarea = (getnamed('CHARGE simulation region','x span')*getnamed('CHARGE','norm length'));
+ base = getresult('CHARGE','base');
+ ?Jb = 0.1*pinch(base.I)/normarea;  # mA/cm2
+ Ve = base.V_emitter;
+ plot(Ve,Jb,'voltage (V)','current density (mA/cm2)');
+ plot(Ve,Jb*Ve,'voltage (V)','efficiency (%)');

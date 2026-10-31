@@ -1,0 +1,135 @@
+#####################################################################
+# Calculate the 1D generation rate profile for ideal absorption 
+#
+# The generation rate profile will be saved to a file for import into
+# DEVICE. The file will be named "OGR <material_name> ideal.mat" 
+#
+# Note: this script requires that an optical material database be present
+# (c) Lumerical Solutions, Inc.
+#####################################################################
+
+# use ideal absorbing material (with Im(index) = 2 for E > Eg, 0 otherwise)
+# if set to zero, the actual material index will be used
+use_ideal = 1;                  
+
+R = 0;                                 # Reflection
+abs_material = 'GaAs - Palik Copy 1';  # absorbing material
+abs_bandgap = 1.424;                   # absorbing material band gap
+depth = 2e-6;                          # max depth for calculation
+save_2d = 1;                           # save for DEVICE (0 = xy, 1 = xz)
+
+#
+# Create a grid for 1D generation rate profile
+#
+max_depth = 1.05*depth;
+min_space = 0.1e-9;
+dz_scale = 1.1;
+z_full = [0; min_space];
+zz = dz_scale*min_space;
+for (0; zz < max_depth; 0 ) {
+  z_full = [z_full; zz];
+  zz = zz*dz_scale;
+}
+z = z_full(find(z_full <= depth));
+npts = length(z);
+if (z(npts) < depth - min_space) {
+  z = [z; depth];
+  npts = npts + 1;
+} 
+
+#
+# Get AM1.5G spectrum between 0.3 and 2.6um and renormalize to 100mW/cm2
+#
+la_all = solar(0); # wavelength [m]
+am1p5g = solar(1);
+
+ispectrum = find(la_all < 2.6e-6);
+la_all = la_all(ispectrum);
+am1p5g = am1p5g(ispectrum);
+
+P_am1p5g = integrate(am1p5g,1,la_all)*1000*1e-4;
+am1p5g = am1p5g*100/P_am1p5g;
+
+P_am1p5g = integrate(am1p5g,1,la_all)*1000*1e-4;
+?'AM1.5G P delivered: '+num2str(P_am1p5g)+' mW/cm2';
+J_am1p5g = integrate(am1p5g*la_all*e/hbar/c/2/pi,1,la_all)*1000*1e-4;
+?'Max AM1.5G eph generation: '+num2str(J_am1p5g)+' mA/cm2';
+
+ila = find(la_all <= 1.4e-6);  # wavelength range 0.3-1.4um
+la = la_all(ila);
+am1p5g = am1p5g(ila); # W/m2/m
+
+#
+# Get the material index
+#
+f = c/la;
+mat_index = getfdtdindex(abs_material,f,min(f),max(f));
+
+n = real(mat_index);
+k = imag(mat_index);
+
+ideal_eg_material_la_cutoff = 2*pi*hbar*c/(abs_bandgap*e);
+?'Material bandgap cutoff = '+num2str(ideal_eg_material_la_cutoff*1e9)+' nm';
+
+if (use_ideal) {
+  k(find(la > ideal_eg_material_la_cutoff)) = 0;
+  k(find(la <= ideal_eg_material_la_cutoff)) = 2;
+  mat_index = n + 1i*k;
+  k_ideal = k;
+  n_ideal = n;
+}
+#plot(la,k);
+
+#
+# Calculate the generation rate
+#
+ie = imag(eps0*mat_index*mat_index);
+Eo2 = (1-R)*2*am1p5g*c*mu0/n;  
+
+igaas = find(la <= ideal_eg_material_la_cutoff);
+la_gaas = la(igaas);
+am1p5g_gaas = am1p5g(igaas);
+I_ideal = integrate(am1p5g_gaas*la_gaas*e/hbar/c/2/pi,1,la_gaas)*1000*1e-4;
+?'Ideal Jsc = '+num2str(I_ideal);
+
+G1d = matrix(npts,1);
+ggm = matrix(length(la),npts);
+for (j = 1:npts) {
+  gg = 0.5*Eo2*exp(-4*pi*k*z(j)/la)*ie/hbar;
+  ggm(1:length(la),j) = gg;
+  G1d(j) = integrate(gg,1,la);
+}
+#plot(z,G1d);
+
+netG = integrate(G1d,1,z);
+Jsc = e*netG*1e-4*1000;
+?'depth='+num2str(depth*1e6)+'um, max Jsc='+num2str(Jsc)+'mA/cm2';
+
+#
+# Save data to file for DEVICE
+#
+if (save_2d >= 0) {
+  x = [-1;1]*1e-6;
+  z = flip(z,1);
+  G1d = flip(G1d,1);
+  if (save_2d) {
+    y = -z;
+    z = x;
+    G = matrix(2,length(y),2);
+    for (i = 1:2) { for (j = 1:2) {
+      G(i,1:length(y),j) = G1d;
+    } }
+  } else {
+    z = -z;
+    y = x;
+    G = matrix(2,2,length(z));
+    for (i = 1:2) { for (j = 1:2) {
+      G(i,j,1:length(z)) = G1d;
+    } }
+  }
+  if (use_ideal) {
+    matlabsave('OGR '+abs_material+' ideal.mat',G,x,y,z);
+  } else {
+    matlabsave('OGR '+abs_material+'.mat',G,x,y,z);
+  }
+} 
