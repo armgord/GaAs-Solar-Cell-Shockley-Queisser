@@ -5,6 +5,7 @@ Simulation study of a thin-film **GaAs/AlGaAs heterojunction solar cell** in **A
 Developed for *TE2049 – Fundamentals of Solid-State Physics and Optoelectronics* at Tecnológico de Monterrey (June 2025).
 
 > 📄 **Full report (Spanish):** [`docs/Reporte_Celda_Solar_GaAs.pdf`](docs/Reporte_Celda_Solar_GaAs.pdf)
+> ☀️ **Lumerical device model:** [download from the latest release](../../releases/latest)
 
 ---
 
@@ -59,13 +60,11 @@ Three design questions from the reference paper were explored. Each was first at
 
 ```
 lumerical/
-  solar_gaas.ldev                      CHARGE device model
   solar_gaas.fsp                       FDTD optical model (generation rate)
   solar_gaas.lsf                       Main analysis script
-  solar_gaas_ideal_1d_absorption.lsf   Ideal-absorption case
+  solar_gaas_ideal_1d_absoprtion.lsf   Ideal-absorption case
   solar_gaas_shadow.lsf                Contact-shadowing case
   solar_gaas_recomb.lsf                Recombination analysis
-  sweeps/                              Modified .ldev files for the CHARGE sweeps
 matlab/
   sweep_al_fraction.m                  Al mole-fraction sweep
   sweep_thickness.m                    Layer-thickness sweep
@@ -75,9 +74,11 @@ docs/
 images/                                Figures used in this README
 ```
 
+The CHARGE device model (`solar_gaas.ldev`, ~54 MB) is too large for the repo and is attached to the [**latest release**](../../releases/latest).
+
 ### Running
 
-- **Lumerical:** open `lumerical/solar_gaas.ldev` in Ansys Lumerical CHARGE and run the scripts from the script editor. The `.fsp` provides the optical generation profile.
+- **Lumerical:** download `solar_gaas.ldev` from the [latest release](../../releases/latest) and place it in `lumerical/` next to the `.fsp` and scripts. Open it in Ansys Lumerical CHARGE and run the scripts from the script editor. The `.fsp` provides the optical generation profile.
 - **MATLAB:** run any script in `matlab/`. They are standalone and need no toolboxes.
 
 ---
